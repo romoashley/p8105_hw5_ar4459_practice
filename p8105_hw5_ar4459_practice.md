@@ -27,11 +27,13 @@ library(purrr)
 ## Problem 2
 
 ``` r
-#load all data into a single dataframe
-filenames = list.files(path = "data/")
-
-data_df = 
-  map(filenames, ~read_csv(file.path("data/", .)))
+# loading data   
+data = 
+  tibble(
+    files = list.files("data/"),
+    path = str_c("data/", files)) |> 
+    mutate(data = map(path, read_csv)) |> 
+    unnest() 
 ```
 
     ## Rows: 1 Columns: 8
@@ -174,15 +176,38 @@ data_df =
     ## 
     ## ℹ Use `spec()` to retrieve the full column specification for this data.
     ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+
+    ## Warning: `cols` is now required when using `unnest()`.
+    ## ℹ Please use `cols = c(data)`.
 
 ``` r
-#combine data
-complete_data = bind_rows(data_df) |> 
+# tidying data
+data_clean = 
+  data |> 
   mutate(
-    filenames = filenames,
-    treatment = case_when(
-      filenames %in% "con" ~ "control",
-      filenames %in% "exp" ~ "experimental"))
+  subject_ID = str_extract(files, "\\d+"),
+  tx_arm = str_extract(files, "con|exp")) |> 
+  pivot_longer(
+    week_1:week_8,
+    names_to = "week",
+    names_prefix = "week_",
+    values_to =  "value") |> 
+  select(subject_ID, tx_arm, week, value) |>
+  mutate(week = as.numeric(week))
 ```
+
+Spaghetti plot
+
+``` r
+plot = 
+  data_clean |> 
+  ggplot(aes(x = week, y = value, color = subject_ID)) +
+  geom_line() +
+  facet_wrap(~tx_arm)
+
+plot
+```
+
+![](p8105_hw5_ar4459_practice_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
 
 ## Problem 3
