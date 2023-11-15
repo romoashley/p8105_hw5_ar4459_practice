@@ -194,7 +194,11 @@ data_clean =
     values_to =  "value") |> 
   select(subject_ID, tx_arm, week, value) |>
   mutate(week = as.numeric(week))
+
+min(pull(data_clean |> filter(tx_arm == "con")))
 ```
+
+    ## [1] -2.17
 
 Spaghetti plot
 
@@ -203,11 +207,52 @@ plot =
   data_clean |> 
   ggplot(aes(x = week, y = value, color = subject_ID)) +
   geom_line() +
-  facet_wrap(~tx_arm)
+  facet_wrap(~tx_arm) +
+  labs(
+    x = "Week",
+    y = "Values",
+    color = "Subject ID",
+    title = "Observations For Each Subject Over Time"
+  )
 
 plot
 ```
 
 ![](p8105_hw5_ar4459_practice_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+The spaghetti plot shows that the control group has lower values than
+the experimental group. The control group appreas to stay between -2.5
+and 5 while the experimental group increases over time. The mean value
+for the control group is 1.017375 and the mean value for the
+experimental group is 3.642125. The minimum value for the control group
+is -2.17 and the miniumum value for the treatment group is -0.84. The
+maximum value for the control group is 4.26 and the maximum value for
+the experimental group is 7.66.
 
 ## Problem 3
+
+``` r
+# generate data
+t_test_sim = function(n = 30, mu = 0, sigma = 5) {
+  
+  data = 
+    tibble(
+      x = rnorm(n = n, mean = mu, sd = sigma)
+    )
+  
+  t_test = 
+    t.test(data, mean = 0, conf.level = 0.95) |> 
+    broom::tidy()
+}
+```
+
+``` r
+# Generate 5000 datasets from the model
+
+output = vector("list", 5000)
+
+for (i in 5000) {
+  output[[i]] = t_test_sim(30)
+}
+
+sim_results = bind_rows(output)
+```
